@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f9f9f9;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    input[type="file"] {
+      margin-bottom: 0.5rem;
+    }
+
+    button {
+      display: inline-block;
+      white-space: nowrap;
+      margin-right: 8px;
+      vertical-align: middle;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #007acc;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: background 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background: #005f99;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    /* Container for pagination buttons and others, flex to keep on one line */
+    #pagination-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    /* Also keep main buttons in a single line */
+    body > input[type="file"],
+    body > button {
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+      margin-bottom: 0.5rem;
+    }
+
+    table {
+      width: 110%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: white;
+      box-shadow: 0 0 6px #ddd;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #007acc;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f2f9ff;
+    }
+    td > div > button {
+  white-space: nowrap;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background-color: #007acc;
+  color: white;
+  transition: background 0.2s ease-in-out;
+}
+
+td > div > button:hover {
+  background-color: #005f99;
+}
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    #page-info {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      text-align: center;
+    }
+    #top-controls {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    #top-controls input[type="file"],
+    #top-controls button {
+     flex-shrink: 0;
+    }
+
+  </style>
+</head>
+<body>
+  <h1>📦 Product Manager</h1>
+
+  <div id="top-controls">
+  <input type="file" id="fileInput" />
+  <button onclick="uploadFile()">Upload XLSX</button>
+  <button onclick="clearAllProducts()">Clear All Products</button>
+  <button onclick="getProducts(currentPage)">Refresh Products</button>
+</div>
+  <div id="page-info"></div>
+  <div id="pagination-controls">
+    <button onclick="changePage(-1)">Previous</button>
+    <button onclick="changePage(1)">Next</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="products"></tbody>
+  </table>
+
+  <script>
+    let currentPage = 1;
+    const pageSize = 10;
+    let totalCount = 0;
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text.replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m]);
+    }
+
+    async function uploadFile() {
+      const input = document.getElementById('fileInput');
+      const file = input.files[0];
+      if (!file) {
+        alert("Select a file first!");
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/uploadfile/', { method: 'POST', body: formData });
+      if (!response.ok) {
+        alert("Upload failed");
+        return;
+      }
+      const products = await response.json();
+      alert("Upload complete!");
+      renderProducts(products);
+      totalCount = products.length;
+      currentPage = 1;
+      updatePageInfo();
+    }
+
+    async function getProducts(page = 1) {
+      const response = await fetch(`/products/?page=${page}&page_size=${pageSize}`);
+      if (!response.ok) {
+        alert("Failed to fetch products");
+        return;
+      }
+      totalCount = parseInt(response.headers.get("X-Total-Count")) || 0;
+      const products = await response.json();
+      currentPage = page;
+      renderProducts(products);
+      updatePageInfo();
+    }
+
+    function renderProducts(products) {
+      const tbody = document.getElementById('products');
+      tbody.innerHTML = '';
+      products.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-id', p.id);
+
+        tr.innerHTML = `
+          <td>${p.id}</td>
+          <td class="name">${escapeHtml(p.name)}</td>
+          <td class="description">${escapeHtml(p.description)}</td>
+          <td>
+            <div style="display:flex; gap:8px; flex-wrap:nowrap; justify-content:flex-start;">
+                <button onclick="startEdit(this)">Edit</button>
+                <button onclick="deleteProduct(${p.id})">Delete</button>
+            </div>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function startEdit(button) {
+      const tr = button.closest('tr');
+      const id = tr.getAttribute('data-id');
+
+      const nameTd = tr.querySelector('.name');
+      const descTd = tr.querySelector('.description');
+
+      const currentName = nameTd.textContent;
+      const currentDesc = descTd.textContent;
+
+      nameTd.innerHTML = `<input type="text" value="${escapeHtml(currentName)}">`;
+      descTd.innerHTML = `<input type="text" value="${escapeHtml(currentDesc)}">`;
+
+      const actionTd = button.parentElement;
+      actionTd.innerHTML = `
+        <div style="display:flex; gap:8px; flex-wrap:nowrap; justify-content:flex-start;">
+            <button onclick="saveEdit(this, ${id})">Save</button>
+            <button onclick="cancelEdit(this, ${id})">Cancel</button>
+        </div>
+        `;
+
+    }
+
+    async function saveEdit(button, id) {
+      const tr = button.closest('tr');
+      const nameInput = tr.querySelector('td.name input');
+      const descInput = tr.querySelector('td.description input');
+
+      const newName = nameInput.value.trim();
+      const newDesc = descInput.value.trim();
+
+      if (!newName) {
+        alert("Name can't be empty");
+        return;
+      }
+
+      const response = await fetch(`/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, description: newDesc })
+      });
+
+      if (!response.ok) {
+        alert("Update failed");
+        return;
+      }
+
+      alert(`Product ${id} updated!`);
+      getProducts(currentPage);
+    }
+
+    function cancelEdit(button, id) {
+      getProducts(currentPage);
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm(`Delete product ${id}?`)) return;
+
+      const response = await fetch(`/products/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        alert("Delete failed");
+        return;
+      }
+
+      alert(`Product ${id} deleted`);
+      getProducts(currentPage);
+    }
+
+    async function clearAllProducts() {
+      if (!confirm("Are you sure you want to delete ALL products?")) return;
+
+      // Change to DELETE if your backend supports it
+      const response = await fetch('/products/clear');
+      if (!response.ok) {
+        alert("Failed to clear products!");
+        return;
+      }
+
+      alert("All products cleared.");
+      getProducts(1);
+    }
+
+    function changePage(dir) {
+      const newPage = currentPage + dir;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      if (newPage < 1 || newPage > totalPages) return;
+      getProducts(newPage);
+    }
+
+    function updatePageInfo() {
+      const pageInfo = document.getElementById('page-info');
+      const totalPages = Math.ceil(totalCount / pageSize);
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages} — ${totalCount} total products`;
+    }
+
+    // Load initial products on page load
+    getProducts();
+  </script>
+</body>
+</html>

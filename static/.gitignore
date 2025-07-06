@@ -1,0 +1,13 @@
+# Ignore environment stuff
+.codespaces/
+.oryx/
+
+# Ignore DB file
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
