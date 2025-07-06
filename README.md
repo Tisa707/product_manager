@@ -1,19 +1,30 @@
-import pandas as pd
-from database import SessionLocal
-from models import Product
-from sqlalchemy.orm import Session
+# Product Manager App
 
-def import_excel(file_path: str):
-    df = pd.read_excel(file_path)
+A simple CRUD app built with FastAPI backend + vanilla JS frontend.
 
-    db: Session = SessionLocal()
+## ✅ Features
 
-    for _, row in df.iterrows():
-        product = Product(name=row['name'], description=row['description'])
-        db.add(product)
+- Upload Excel (.xlsx) file with products
+- List products with pagination
+- Inline edit & delete
+- Clear all products at once
 
-    db.commit()
-    db.close()
+## 📷 Screenshots
 
-if __name__ == "__main__":
-    import_excel("your_excel_file.xlsx")
+1️ Home page  
+![Home](screenshots/1-home.jpg)
+
+2 Upload Excel  
+![Upload](screenshots/2-upload.jpg)
+
+3 Edit product  
+![Edit](screenshots/3-edit.jpg)
+
+4 Clear all products  
+![Clear](screenshots/4-clear.jpg)
+
+## ⚙️ How to Run
+
+1. Start backend:  
+   ```bash
+   uvicorn main:app --reload
