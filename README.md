@@ -2,14 +2,14 @@
 
 A simple CRUD app built with FastAPI backend + vanilla JS frontend.
 
-## ✅ Features
+## Features
 
 - Upload Excel (.xlsx) file with products
 - List products with pagination
 - Inline edit & delete
 - Clear all products at once
 
-## 📷 Screenshots
+## Screenshots
 
 1️ Home page  
 ![Home](screenshots/1-home.jpg)
@@ -23,7 +23,7 @@ A simple CRUD app built with FastAPI backend + vanilla JS frontend.
 4 Clear all products  
 ![Clear](screenshots/4-clear.jpg)
 
-## ⚙️ How to Run
+## How to Run
 
 1. Start backend:  
    ```bash
